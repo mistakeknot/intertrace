@@ -26,6 +26,11 @@ _trace_events_find_producers() {
         local abs_path="$root/$file"
         [[ -f "$abs_path" ]] || continue
 
+        # Skip doc/research/plan files — their prose mentions ic events emit but isn't code
+        case "$file" in
+            docs/brainstorms/*|docs/plans/*|docs/prds/*|docs/research/*|docs/solutions/*) continue ;;
+        esac
+
         # Match: ic events emit <type> (shell/Go invocations)
         local matches
         matches=$(grep -n 'ic events emit\|ic\.Events\.Emit\|events\.Emit' "$abs_path" 2>/dev/null) || continue
