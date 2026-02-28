@@ -38,9 +38,18 @@ _trace_events_find_producers() {
             # Extract event type — patterns:
             # ic events emit <type> ...
             # ic events emit "<type>" ...
+            # ic events emit \ (multiline with --type=<type> on following lines)
             local event_type=""
             event_type=$(echo "$line_text" | sed -n 's/.*ic events emit[[:space:]]*"\?\([a-zA-Z0-9_.]*\)"\?.*/\1/p')
             [[ -z "$event_type" ]] && event_type=$(echo "$line_text" | sed -n 's/.*Emit("\([^"]*\)".*/\1/p')
+
+            # Handle multiline: if emit line ends with \, look for --type= in next 5 lines
+            if [[ -z "$event_type" ]] && echo "$line_text" | grep -q '\\$'; then
+                local context_lines
+                context_lines=$(sed -n "$((line_num+1)),$((line_num+5))p" "$abs_path" 2>/dev/null)
+                event_type=$(echo "$context_lines" | sed -n 's/.*--type=\([a-zA-Z0-9_.-]*\).*/\1/p' | head -1)
+            fi
+
             [[ -z "$event_type" ]] && continue
 
             results=$(echo "$results" | jq \
@@ -147,6 +156,9 @@ _trace_events_scan() {
         [[ -z "$et" ]] && continue
         local consumers
         consumers=$(_trace_events_verify_consumers "$root" "$et")
+
+        # Deduplicate consumers by module+evidence_type (keep first per combo)
+        consumers=$(echo "$consumers" | jq '[group_by(.module + .evidence_type) | .[] | .[0]]')
 
         local producer_file
         producer_file=$(echo "$producers" | jq -r --arg et "$et" '[.[] | select(.event_type == $et)][0].file')
