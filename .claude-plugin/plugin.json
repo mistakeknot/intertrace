@@ -1,6 +1,6 @@
 {
   "name": "intertrace",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Cross-module integration gap tracer — traces data flows from shipped features to find unverified consumer edges.",
   "author": {
     "name": "mistakeknot"
