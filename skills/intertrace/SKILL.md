@@ -120,9 +120,53 @@ Then use **AskUserQuestion** with options:
 For each gap that should become a bead:
 
 ```bash
-bd create --title="Integration gap: <description>" --type=bug --priority=<1|2|3> --description="Found by intertrace tracing <bead_id>. <evidence details>"
+# Map evidence-strength to priority: P1→P2, P2→P3, P3→P4
+# (P1 gaps are important but not urgent — they're latent integration debt, not outages)
+case "$evidence_rank" in
+    P1) bead_priority=2 ;;
+    P2) bead_priority=3 ;;
+    P3) bead_priority=4 ;;
+esac
+
+new_id=$(bd create \
+    --title="Integration gap: <concise description of what's unverified>" \
+    --type=bug \
+    --priority="$bead_priority" \
+    --description="<Full evidence paragraph. Include:
+- Which tracer found this (event-bus / contracts / companion-graph)
+- What was expected (declared consumer, contract entry, companion edge)
+- What was missing (no code evidence, no cursor registration, no hook_id)
+- Possible false negative explanation if applicable
+- Trace report: docs/traces/YYYY-MM-DD-<bead_id>-trace.md>" \
+    2>&1)
+
+# Extract bead ID from output
+new_bead_id=$(echo "$new_id" | grep -oP 'iv-[a-z0-9]+')
+
+# Label as intertrace finding and link to source bead
+bd update "$new_bead_id" --add-label="source:intertrace" --add-label="trace:$bead_id"
+```
+
+**Grouping rules** — don't create one bead per grep miss. Group related findings:
+- Same event type with multiple missing consumers → one bead listing all consumers
+- Same contract with multiple unverified consumers → one bead
+- Multiple P2 findings from the same tracer limitation (e.g., grep pattern misses) → one improvement bead for the tracer itself
+
+**After creating all beads**, display a summary table:
+
+```
+Beads created:
+  iv-xxx: Integration gap: <title> [P2, source:intertrace]
+  iv-yyy: Integration gap: <title> [P3, source:intertrace]
+
+Labeled: source:intertrace, trace:<source_bead_id>
+```
+
+Then push beads state:
+```bash
+bash .beads/push.sh
 ```
 
 ## Step 6: Save Report
 
-Write findings to `docs/traces/YYYY-MM-DD-<bead_id>-trace.md` with the full report including all findings, evidence, and any beads created.
+Write findings to `docs/traces/YYYY-MM-DD-<bead_id>-trace.md` with the full report including all findings, evidence, and any beads created. If beads were created in Step 5, append a "Created Beads" section to the report listing each bead ID and title.
