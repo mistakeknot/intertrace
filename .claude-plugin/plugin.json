@@ -17,6 +17,5 @@
   ],
   "agents": [
     "./agents/review/fd-integration.md"
-  ],
-  "hooks": "./hooks/hooks.json"
+  ]
 }
