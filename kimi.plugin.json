@@ -1,0 +1,18 @@
+{
+  "name": "intertrace",
+  "version": "0.1.2",
+  "description": "Cross-module integration gap tracer — traces data flows from shipped features to find unverified consumer edges.",
+  "license": "MIT",
+  "keywords": [
+    "integration",
+    "tracing",
+    "data-flow",
+    "gap-detection"
+  ],
+  "author": "mistakeknot",
+  "interface": {
+    "displayName": "intertrace",
+    "shortDescription": "Cross-module integration gap tracer — traces data flows from shipped features to find unverified consumer edges."
+  },
+  "skills": "./skills/"
+}
